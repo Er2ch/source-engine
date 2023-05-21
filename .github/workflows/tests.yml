@@ -59,6 +59,33 @@ jobs:
           cd build_tests
           DYLD_LIBRARY_PATH=bin/ ./unittest
 
+  tests-freebsd:
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Build freebsd-amd64
+        uses: vmactions/freebsd-vm@v0
+        with:
+          usesh: true # default is tcsh until 14.0
+          sync: sshfs
+          mem: 2048
+          envs: 'WAF_FLAGS'
+          prepare: |
+            pkg ins -y python
+          run: |
+            freebsd-version -kru
+            echo ////////// Configure //////////
+            ./waf configure --64bits ${{ matrix.flags }} $WAF_FLAGS
+            echo ////////// Build //////////
+            ./waf install
+            rm -rf .waf* build/ scripts/waifulib/__pycache__/ # because it copies back
+            echo ////////// Run tests //////////
+            cd build_tests
+            LD_LIBRARY_PATH=bin/ ./unittest
+
   tests-windows:
     strategy:
       matrix:

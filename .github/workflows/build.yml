@@ -63,7 +63,7 @@ jobs:
       - name: Upload debug symbols
         uses: actions/upload-artifact@v3
         with:
-          name: debug-Linux${{matrix.bits}}${{matrix.flags}}${{matrix.android}}
+          name: debug-linux${{matrix.bits}}${{matrix.flags}}${{matrix.android}}
           path: |
             build_hl2/**/*.debug
 
@@ -88,16 +88,57 @@ jobs:
       - name: Upload build
         uses: actions/upload-artifact@v3
         with:
-          name: macOS--64bits${{matrix.flags}}${{matrix.android}}
+          name: macOS--64bits${{matrix.flags}}
           path: |
             build_hl2
             !build_hl2/**/*.dSYM
       - name: Upload debug symbols
         uses: actions/upload-artifact@v3
         with:
-          name: debug-macOS--64bits${{matrix.flags}}${{matrix.android}}
+          name: debug-macOS--64bits${{matrix.flags}}
           path: |
             build_hl2/**/*.dSYM
+
+  build-freebsd:
+    strategy:
+      fail-fast: false
+      matrix:
+        flags: ['', '-d']
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Build freebsd-amd64
+        uses: vmactions/freebsd-vm@v0
+        with:
+          usesh: true # default is tcsh until 14.0
+          sync: sshfs
+          mem: 2048
+          envs: 'WAF_FLAGS'
+          prepare: |
+            pkg ins -y python sdl2 freetype2 fontconfig curl pkgconf openal-soft jpeg-turbo png libedit
+          run: |
+            freebsd-version -kru
+            echo ////////// Configure //////////
+            ./waf configure --64bits ${{ matrix.flags }} $WAF_FLAGS
+            echo ////////// Build //////////
+            ./waf install --strip-to-file
+            rm -rf .waf* build/ scripts/waifulib/__pycache__/ # because it copies back
+      - name: Upload build
+        uses: actions/upload-artifact@v3
+        with:
+          name: freebsd--64bits${{matrix.flags}}
+          path: |
+            build_hl2
+            !build_hl2/**/*.debug
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-freebsd--64bits${{matrix.flags}}${{matrix.android}}
+          path: |
+            build_hl2/**/*.debug
 
   build-windows:
     strategy:
