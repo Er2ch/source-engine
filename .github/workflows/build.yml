@@ -5,115 +5,59 @@ env:
   WAF_FLAGS: -T debug --disable-warns --prefix=build_hl2
 
 jobs:
-  build-linux:
+  deps:
     strategy:
-      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-2019
         bits: ['', '--64bits']
         android: ['']
-        flags: ['', '-d']
         include:
           - os: ubuntu-20.04
             bits: ''
             android: '--android=armeabi-v7a-hard,4.9,21 --togles'
-            flags: ''
-    runs-on: ${{ matrix.os }}
-    env:
-      DEPS: libopenal-dev libpng-dev libjpeg-dev libfreetype6-dev libfontconfig1-dev libcurl4-gnutls-dev libsdl2-dev zlib1g-dev libbz2-dev libedit-dev
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+        exclude:
+          - os: macos-latest
+            bits: ''
+    uses: ./.github/workflows/deps.yml
+    with:
+      os: ${{ matrix.os }}
+      bits: ${{ matrix.bits }}
+      android: ${{ matrix.android }}
+      linux-deps: libopenal-dev libpng-dev libjpeg-dev libfreetype6-dev libfontconfig1-dev libcurl4-gnutls-dev libsdl2-dev zlib1g-dev libbz2-dev libedit-dev
+      macos-deps: sdl2
 
-      - name: Install common dependencies
-        run: sudo apt-get update && sudo apt-get install -y g++-multilib gcc-multilib
-      - name: Install 32bit dependencies
-        if: ${{ matrix.bits == '' && !matrix.android }}
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y aptitude
-          sudo aptitude install -y $(echo $DEPS | sed -r 's/[a-z0-9_\-]+/&:i386/g')
-          echo "PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig" >> $GITHUB_ENV
-      - name: Install 64bit dependencies
-        if: ${{ matrix.bits != '' }}
-        run: |
-          sudo apt-get install -y $DEPS
-      - name: Install Android dependencies
-        if: ${{ matrix.android != '' }}
-        run: |
-          wget https://dl.google.com/android/repository/android-ndk-r10e-linux-x86_64.zip -o /dev/null
-          unzip android-ndk-r10e-linux-x86_64.zip
-          export NDK_HOME=$PWD/android-ndk-r10e/
-          echo "NDK_HOME=$NDK_HOME" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$NDK_HOME" >> $GITHUB_ENV
+  build:
+    needs: deps
+    environment: production
+    runs-on: ${{ needs.deps.outputs.os }}
 
-      - name: Configure
-        run: ./waf configure ${{ matrix.bits }} ${{ matrix.android }} ${{ matrix.flags }} $WAF_FLAGS
-      - name: Build ${{ matrix.os }}
-        run: ./waf install --strip-to-file
-      - name: Upload build
-        uses: actions/upload-artifact@v3
-        with:
-          name: linux${{matrix.bits}}${{matrix.flags}}${{matrix.android}}
-          path: |
-            build_hl2
-            !build_hl2/**/*.debug
-      - name: Upload debug symbols
-        uses: actions/upload-artifact@v3
-        with:
-          name: debug-Linux${{matrix.bits}}${{matrix.flags}}${{matrix.android}}
-          path: |
-            build_hl2/**/*.debug
-
-  build-macos:
     strategy:
       fail-fast: false
       matrix:
+        deps: ${{ needs.deps.outputs.* }}
         flags: ['', '-d']
-    runs-on: macos-latest
+
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Install dependencies
-        run: brew install sdl2
-
       - name: Configure
-        run: ./waf configure --64bits ${{ matrix.flags }} $WAF_FLAGS
-      - name: Build macos-amd64
+        run: ./waf configure ${{ matrix.deps.bits }} ${{ matrix.deps.android }} ${{ matrix.deps.flags }} $WAF_FLAGS
+
+      - name: Build ${{ matrix.deps.os }}
         run: ./waf install --strip-to-file
+
       - name: Upload build
         uses: actions/upload-artifact@v3
         with:
-          name: macOS--64bits${{matrix.flags}}${{matrix.android}}
+          name: ${{runner.os}}${{matrix.deps.bits}}${{matrix.deps.flags}}${{matrix.deps.android}}
           path: |
             build_hl2
-            !build_hl2/**/*.dSYM
-      - name: Upload debug symbols
-        uses: actions/upload-artifact@v3
-        with:
-          name: debug-macOS--64bits${{matrix.flags}}${{matrix.android}}
-          path: |
-            build_hl2/**/*.dSYM
-
-  build-windows:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-2019]
-        bits: ['', '--64bits']
-        flags: ['', '-d']
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Configure
-        run: ./waf configure ${{ matrix.bits }} ${{ matrix.flags }} ${{ env.WAF_FLAGS }}
-      - name: Build ${{ matrix.os }}
-        run: ./waf install
+      # TODO
+      #- name: Upload debug symbols
+      #  uses: actions/upload-artifact@v3
+      #  with:
+      #    name: Debug-${{runner.os}}${{matrix.bits}}${{matrix.flags}}${{matrix.android}}
+      #    path: |
+      #      build_debug
 
