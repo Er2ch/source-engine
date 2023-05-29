@@ -21,50 +21,46 @@ on:
         value: ${{ inputs.android }}
 
 jobs:
-  deps:
-    runs-on: ${{ inputs.os }}
+  deps-linux:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        bits: ['', '--64bits']
+        android: ['']
+        include:
+          - os: ubuntu-20.04
+            bits: ''
+            android: '--android=armeabi-v7a-hard,4.9,21 --togles'
+
+    runs-on: ${{ matrix.os }}
+    env:
+      DEPS: ${{ inputs.linux-deps }}
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - name: Get OS name
-        if: ${{ !startsWith(inputs.os, 'Windows') }}
-        run: echo OS=$(uname) >> $GITHUB_ENV
-      - name: Get OS name (Windows)
-        if: ${{ startsWith(inputs.os, 'Windows') }}
-        run: $env:OS = "Windows";
-
       # Linux
-      - name: Install common linux dependencies
-        if: ${{ env.OS == 'Linux' }}
+      - name: Install common dependencies
         run: sudo apt-get update && sudo apt-get install -y g++-multilib gcc-multilib
       - name: Install 32bit linux dependencies
-        if: ${{ env.OS == 'Linux' && !inputs.bits && !inputs.android }}
+        if: ${{ !matrix.bits && !matrix.android }}
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y aptitude
           sudo aptitude install -y $(echo $DEPS | sed -r 's/[a-z0-9_\-]+/&:i386/g')
           echo "PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig" >> $GITHUB_ENV
-        env:
-          DEPS: ${{ inputs.linux-deps }}
       - name: Install 64bit linux dependencies
-        if: ${{ env.OS == 'Linux' && inputs.bits }}
+        if: ${{ inputs.bits }}
         run: |
           sudo apt-get install -y $DEPS
-        env:
-          DEPS: ${{ inputs.linux-deps }}
       - name: Install Android SDK
-        if: ${{ env.OS == 'Linux' && inputs.android }}
+        if: ${{ inputs.android }}
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r10e-linux-x86_64.zip -o /dev/null
           unzip android-ndk-r10e-linux-x86_64.zip
           export NDK_HOME=$PWD/android-ndk-r10e/
           echo "NDK_HOME=$NDK_HOME" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$NDK_HOME" >> $GITHUB_ENV
-
-      - name: Install macOS dependencies
-        if: ${{ env.OS == 'Darwin' }}
-        run: brew install ${{ inputs.macos-deps }}
 
