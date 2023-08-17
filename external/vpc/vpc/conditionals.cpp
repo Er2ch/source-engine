@@ -225,7 +225,7 @@ bool EvalExpression(char* pStr, bool bParens = false, char **ppOut = nullptr)
 			if (cSaved) *pStr = '\0'; // for C strings
 			bVal = EvaluateConditional(str) || g_pVPC->ResolveConditionalSymbol(str);
 			bVal ^= bNot;
-			*pStr++ = cSaved; // to allow syntax like [!$WIN64&&!$VS2015]
+			*pStr = cSaved; // to allow syntax like [!$WIN64&&!$VS2015]
 			goto out;
 			break;
 		}
@@ -237,6 +237,7 @@ bool EvalExpression(char* pStr, bool bParens = false, char **ppOut = nullptr)
 				g_pVPC->VPCSyntaxError("invalid 'or', should be '||'");
 			bVal2 = EvalExpression(pStr, false, &pStr);
 			bVal = bVal || bVal2;
+			goto out;
 			break;
 
 		case '&': // &&
@@ -244,6 +245,7 @@ bool EvalExpression(char* pStr, bool bParens = false, char **ppOut = nullptr)
 				g_pVPC->VPCSyntaxError("invalid 'and', should be '&&'");
 			bVal2 = EvalExpression(pStr, false, &pStr);
 			bVal = bVal && bVal2;
+			goto out;
 			break;
 
 		case '(':
@@ -285,8 +287,5 @@ bool CVPC::EvaluateConditionalExpression( const char *pExpression )
 		// empty string, same as not having a conditional
 		return true;
 	}
-	Msg("%s\n", conditionalBuffer);
-	bool bSuccess = EvalExpression((char *)conditionalBuffer);
-	Msg(" = %d\n", bSuccess);
-	return bSuccess;
+	return EvalExpression((char *)conditionalBuffer);
 }
