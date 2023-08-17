@@ -128,7 +128,6 @@ $Project "vstdlib"
 		$File	"cvar.cpp"
 		$File	"jobthread.cpp"
 		$File	"KeyValuesSystem.cpp"
-		$File	"osversion.cpp"
 		$File	"processutils.cpp"			[$WINDOWS]
 		$File	"random.cpp"
 		$File	"vcover.cpp"

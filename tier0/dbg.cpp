@@ -118,8 +118,12 @@ void CDbgLogger::Init(const char *logfile)
 #ifdef GNUC
 		fprintf(file, "Compiler version: %s\n", __VERSION__);
 #endif
+#ifdef WAF_CFLAGS
 		fprintf(file, "Compiler CFLAGS: %s\n", WAF_CFLAGS);
 		fprintf(file, "Compiler LDFLAGS: %s\n", WAF_LDFLAGS);
+#else
+		fprintf(file, "Compiler flags is not defined, VPC used?\n");
+#endif
 		fflush(file);
 
 		for( int i = 0; i < iMsg; i++ )
