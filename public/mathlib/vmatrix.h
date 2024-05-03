@@ -43,7 +43,11 @@ struct cplane_t;
 	#define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
-class alignas(16) VMatrix
+class
+#if 0 // DXVK throws SIGBUS with matrix operations in it, clang throws warning about alignment changes too
+alignas(16)
+#endif
+VMatrix
 {
 public:
 

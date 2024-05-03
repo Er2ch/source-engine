@@ -1637,7 +1637,7 @@ void CMaterialSystem::GenerateConfigFromConfigKeyValues( MaterialSystem_Config_t
 
 	pConfig->m_Flags = 0;
 
-#ifdef LINUX
+#ifdef POSIX
 
 	uint width = 0;
 	uint height = 0;
@@ -1714,7 +1714,7 @@ void CMaterialSystem::GenerateConfigFromConfigKeyValues( MaterialSystem_Config_t
 
 	pKeyValues->deleteThis();
 
-#endif // LINUX
+#endif // POSIX
 
 	WriteConfigurationInfoToConVars( bOverwriteCommandLineValues );
 	m_bGeneratedConfig = true;

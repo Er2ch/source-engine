@@ -30,6 +30,9 @@
 // Placed here so inlines placed in dxabstract.h can access gGL
 COpenGLEntryPoints *gGL = NULL;
 #endif
+#ifdef USE_SDL
+void posixGetClientRect( void *hWnd, RECT *destRect );
+#endif
 
 #define D3D_BATCH_PERF_ANALYSIS 0
 
@@ -1484,8 +1487,11 @@ bool CShaderDeviceMgrDx8::ValidateMode( int nAdapter, const ShaderDeviceInfo_t &
 //-----------------------------------------------------------------------------
 int CShaderDeviceMgrDx8::GetVidMemBytes( int nAdapter ) const
 {
-#if defined( _X360 )
+#if defined( _X360 ) || defined(DXVK)
 	return 256*1024*1024;
+# ifdef DXVK
+#  warning "TODO: DXVK: Calculate video memory size"
+# endif
 #elif defined (DX_TO_GL_ABSTRACTION)
 	D3DADAPTER_IDENTIFIER9 devIndentifier;
 	D3D()->GetAdapterIdentifier( nAdapter, D3DENUM_WHQL_LEVEL, &devIndentifier );
@@ -2113,7 +2119,7 @@ const char *GetD3DErrorText( HRESULT hr )
 {
 	const char *pszMoreInfo = NULL;
 
-#if defined( _WIN32 ) && !defined(DX_TO_GL_ABSTRACTION)
+#if defined( _WIN32 ) && !defined(DX_TO_GL_ABSTRACTION) || defined(DXVK)
 	switch ( hr )
 	{
 	case D3DERR_WRONGTEXTUREFORMAT:
@@ -2250,7 +2256,7 @@ IDirect3DDevice9* CShaderDeviceDx8::InvokeCreateDevice( void* hWnd, int nAdapter
 	const char *pszMoreInfo = NULL;
 	switch ( hr )
 	{
-#ifdef _WIN32
+#if defined( _WIN32 ) || defined( DXVK )
 	case D3DERR_INVALIDCALL:
 		// Override the error text for this error since it has a known meaning for CreateDevice failures.
 		pszMoreInfo = "D3DERR_INVALIDCALL: The device or the device driver may not support Direct3D or may not support the resolution or color depth specified.";
@@ -3404,10 +3410,10 @@ void CShaderDeviceDx8::Present()
 		if ( IsPC() && ( m_IsResizing || ( m_ViewHWnd != (VD3DHWND)m_hWnd ) ) )
 		{
 			RECT destRect;
-			#ifndef DX_TO_GL_ABSTRACTION
-					GetClientRect( ( HWND )m_ViewHWnd, &destRect );
+			#if defined( DX_TO_GL_ABSTRACTION ) || defined( POSIX )
+					posixGetClientRect( (VD3DHWND)m_ViewHWnd, &destRect );
 			#else
-					toglGetClientRect( (VD3DHWND)m_ViewHWnd, &destRect );
+					GetClientRect( ( HWND )m_ViewHWnd, &destRect );
 			#endif
 
 			ShaderViewport_t viewport;

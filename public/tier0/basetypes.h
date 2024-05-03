@@ -18,6 +18,9 @@
 #pragma once
 #endif
 
+#ifdef DXVK
+#include <windows.h>
+#endif
 
 // This is a trick to get the DLL extension off the -D option on the command line.
 #define DLLExtTokenPaste(x) #x
@@ -147,7 +150,9 @@ typedef int BOOL;
 #endif
 
 typedef int qboolean;
+#ifndef DXVK
 typedef unsigned long ULONG;
+#endif
 typedef unsigned char BYTE;
 typedef unsigned char byte;
 typedef unsigned short word;

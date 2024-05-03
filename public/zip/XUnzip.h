@@ -104,7 +104,9 @@ typedef char TCHAR;
 #if defined(POSIX) && !defined(MAX_PATH)
 #include <limits.h>
 #define MAX_PATH PATH_MAX
+#ifndef DXVK
 typedef bool BOOL;
+#endif
 #endif
 
 #ifndef XZIP_H

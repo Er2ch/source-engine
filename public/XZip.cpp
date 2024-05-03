@@ -98,6 +98,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #elif !defined(_X360)
+#ifdef DXVK
+#include <windows.h>
+#endif
 #define far
 #define near
 #define INVALID_HANDLE_VALUE (void*)-1

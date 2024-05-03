@@ -41,9 +41,6 @@
 #define	IUNKNOWN_ALLOC_SPEW_MARK_ALL 0	
 
 
-TOGL_INTERFACE void toglGetClientRect( VD3DHWND hWnd, RECT *destRect );
-
-
 struct TOGL_CLASS IUnknown
 {
 	int	m_refcount[2];

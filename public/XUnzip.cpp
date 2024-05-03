@@ -104,6 +104,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 #endif
+#ifdef DXVK
+#include <windows.h>
+#endif
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -108,7 +108,7 @@ enum ImageFormat
 	NUM_IMAGE_FORMATS
 };
 
-#if defined( POSIX  ) || defined( DX_TO_GL_ABSTRACTION )
+#if defined( DX_TO_GL_ABSTRACTION )
 typedef enum _D3DFORMAT
 	{
 		D3DFMT_INDEX16,
@@ -161,6 +161,8 @@ typedef enum _D3DFORMAT
 		
 		D3DFMT_UNKNOWN
 	} D3DFORMAT;
+#elif defined(DXVK)
+#include <d3d9.h>
 #endif
 
 //-----------------------------------------------------------------------------

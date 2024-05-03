@@ -82,7 +82,7 @@ typedef int SOCKET;
 
 
 // It currently includes windows.h and we don't want that.
-#ifdef USE_ACTUAL_DX
+#ifdef _WIN32
 
 #include "../utils/bzip2/bzlib.h"
 
@@ -307,12 +307,14 @@ static HardwareShader_t CreateD3DVertexShader( DWORD *pByteCode, int numBytes, c
 	#ifdef DX_TO_GL_ABSTRACTION	
 		HRESULT hr = Dx9Device()->CreateVertexShader( pByteCode, (IDirect3DVertexShader9 **)&hShader, pShaderName, debugLabel );
 	#else
+	#if 0
 		if ( IsEmulatingGL() )
 		{
 			DWORD dwVersion = D3DXGetShaderVersion(	pByteCode );
 			REFERENCE( dwVersion );
 			Assert ( D3DSHADER_VERSION_MAJOR( dwVersion ) == 2 );
 		}
+	#endif
 
 	#if defined(_X360) || !defined(DX_TO_GL_ABSTRACTION)
 		HRESULT hr = Dx9Device()->CreateVertexShader( pByteCode, (IDirect3DVertexShader9 **)&hShader );
@@ -429,12 +431,15 @@ static HardwareShader_t CreateD3DPixelShader( DWORD *pByteCode, unsigned int nCe
 			HRESULT hr = Dx9Device()->CreatePixelShader( pByteCode, ( IDirect3DPixelShader ** )&shader, pShaderName, debugLabel, &nCentroidMask );
 		#endif
 	#else
+	#if 0
 		if ( IsEmulatingGL() )
 		{
 			DWORD dwVersion;
 			dwVersion = D3DXGetShaderVersion( pByteCode );
 			Assert ( D3DSHADER_VERSION_MAJOR( dwVersion ) == 2 );
 		}
+	#endif
+
 #if defined(_X360) || !defined(DX_TO_GL_ABSTRACTION)
 		HRESULT hr = Dx9Device()->CreatePixelShader( pByteCode, ( IDirect3DPixelShader ** )&shader );
 #else
@@ -956,6 +961,10 @@ void CShaderManager::Shutdown()
 //-----------------------------------------------------------------------------
 IShaderBuffer *CShaderManager::CompileShader( const char *pProgram, size_t nBufLen, const char *pShaderVersion )
 {
+#if 1 // Er2: Added to remove D3DX9 dependency
+	Error("Shader compilation is no longer supported in Source Engine!\n");
+	return NULL;
+#else
 	int nCompileFlags = D3DXSHADER_AVOID_FLOW_CONTROL;
 
 #ifdef _DEBUG
@@ -987,6 +996,7 @@ IShaderBuffer *CShaderManager::CompileShader( const char *pProgram, size_t nBufL
 	}
 
 	return pShaderBuffer;
+#endif
 }
 
 
@@ -3322,20 +3332,15 @@ void CShaderManager::SetVertexShader( VertexShader_t shader )
 		dxshader = CompileShader( m_ShaderSymbolTable.String( vshLookup.m_Name ), vshLookup.m_nStaticIndex, vshIndex, true );
 		Assert( dxshader != INVALID_HARDWARE_SHADER );
 
-		if( IsX360() )
+#if IsX360()
+		//360 does not respond well at all to bad shaders or Error() calls. So we're staying here until we get something that compiles
+		while( dxshader == INVALID_HARDWARE_SHADER )
 		{
-			//360 does not respond well at all to bad shaders or Error() calls. So we're staying here until we get something that compiles
-			while( dxshader == INVALID_HARDWARE_SHADER )
-			{
-				Warning( "A dynamically compiled vertex shader has failed to build. Pausing for 5 seconds and attempting rebuild.\n" );
-#ifdef _WIN32
-				Sleep( 5000 );
-#elif POSIX
-				usleep( 5000 );
-#endif
-				dxshader = CompileShader( m_ShaderSymbolTable.String( vshLookup.m_Name ), vshLookup.m_nStaticIndex, vshIndex, true );
-			}
+			Warning( "A dynamically compiled vertex shader has failed to build. Pausing for 5 seconds and attempting rebuild.\n" );
+			Sleep( 5000 );
+			dxshader = CompileShader( m_ShaderSymbolTable.String( vshLookup.m_Name ), vshLookup.m_nStaticIndex, vshIndex, true );
 		}
+#endif
 	}
 #else
 	if ( vshLookup.m_Flags & SHADER_FAILED_LOAD )
@@ -3425,20 +3430,15 @@ void CShaderManager::SetPixelShader( PixelShader_t shader )
 		dxshader = CompileShader( m_ShaderSymbolTable.String( pshLookup.m_Name ), pshLookup.m_nStaticIndex, pshIndex, false );
 //		Assert( dxshader != INVALID_HARDWARE_SHADER );
 
-		if( IsX360() )
+#if IsX360()
+		//360 does not respond well at all to bad shaders or Error() calls. So we're staying here until we get something that compiles
+		while( dxshader == INVALID_HARDWARE_SHADER )
 		{
-			//360 does not respond well at all to bad shaders or Error() calls. So we're staying here until we get something that compiles
-			while( dxshader == INVALID_HARDWARE_SHADER )
-			{
-				Warning( "A dynamically compiled pixel shader has failed to build. Pausing for 5 seconds and attempting rebuild.\n" );
-#ifdef _WIN32
-				Sleep( 5000 );
-#elif POSIX
-				usleep( 5000 );
-#endif
-				dxshader = CompileShader( m_ShaderSymbolTable.String( pshLookup.m_Name ), pshLookup.m_nStaticIndex, pshIndex, false );
-			}
+			Warning( "A dynamically compiled pixel shader has failed to build. Pausing for 5 seconds and attempting rebuild.\n" );
+			Sleep( 5000 );
+			dxshader = CompileShader( m_ShaderSymbolTable.String( pshLookup.m_Name ), pshLookup.m_nStaticIndex, pshIndex, false );
 		}
+#endif
 	}
 #else
 	if ( pshLookup.m_Flags & SHADER_FAILED_LOAD )

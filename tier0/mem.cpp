@@ -92,7 +92,7 @@ void MemFreeScratch()
 	--s_nBufDepth;
 }
 
-#ifdef POSIX
+#if defined( POSIX ) && !defined( DXVK )
 void ZeroMemory( void *mem, size_t length )
 {
 	memset( mem, 0x0, length );

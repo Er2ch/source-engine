@@ -11,8 +11,11 @@
 #endif
 
 #if defined( _WIN32 ) && !defined( _X360 )
-#include "winlite.h"
+# include "winlite.h"
 #elif defined(POSIX)
+# ifdef DXVK
+#  include <windows.h>
+# endif
 typedef void *HDC;
 #endif
 
@@ -1117,7 +1120,7 @@ void CVideoMode_Common::DrawNullBackground( void *hHDC, int w, int h )
 
 }
 
-#ifndef _WIN32
+#ifdef DX_TO_GL_ABSTRACTION
 
 typedef unsigned char BYTE;
 typedef signed long LONG;
@@ -1172,7 +1175,7 @@ typedef struct _GUID
 #endif
 typedef GUID UUID;
 
-#endif //WIN32
+#endif //DX_TO_GL_ABSTRACTION
 //-----------------------------------------------------------------------------
 // Purpose: Blits an image to the loading window hdc
 //-----------------------------------------------------------------------------

@@ -56,9 +56,14 @@
 
 #else
 	//USE_ACTUAL_DX
-	#ifdef WIN32
+	#if defined(WIN32) || defined(DXVK)
 		#ifdef _X360
 			#include "d3d9.h"
+			#include "d3dx9.h"
+		#elif defined(DXVK)
+			#include "d3d9.h"
+			#define LF_FACESIZE 32
+			// Er2: no external functions: only inlined d3dx9math + d3dx9stuff.cpp
 			#include "d3dx9.h"
 		#else
 			#include <windows.h>

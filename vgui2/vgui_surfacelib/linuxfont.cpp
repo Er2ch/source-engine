@@ -520,7 +520,7 @@ char *CLinuxFont::GetFontFileName( const char *windowsFontName, int flags )
 	FcPattern *match = FontMatch( FC_FAMILY, FcTypeString, pchFontName,
 								  FC_WEIGHT, FcTypeInteger, nFcWeight,
 								  FC_SLANT, FcTypeInteger, italic,
-								  NULL);
+								  nullptr );
  	if ( !match )
 	{
 		AssertMsg1( false, "Unable to find font named %s\n", windowsFontName );

@@ -180,6 +180,7 @@ def define_platform(conf):
 	conf.env.DEDICATED = conf.options.DEDICATED
 	conf.env.TESTS = conf.options.TESTS
 	conf.env.TOGLES = conf.options.TOGLES
+	conf.env.DXVK = conf.options.DXVK
 	conf.env.GL = conf.options.GL and not conf.options.TESTS and not conf.options.DEDICATED
 	conf.env.OPUS = conf.options.OPUS
 
@@ -203,8 +204,10 @@ def define_platform(conf):
 			'BINK_VIDEO'
 		])
 
-	if conf.options.TOGLES:
+	if conf.env.TOGLES:
 		conf.env.append_unique('DEFINES', ['TOGLES'])
+	elif conf.env.DXVK:
+		conf.env.append_unique('DEFINES', ['DXVK'])
 
 	if conf.options.TESTS:
 		conf.define('UNITTESTS', 1)
@@ -283,6 +286,7 @@ def define_platform(conf):
 
 
 def options(opt):
+	isWin32 = sys.platform == 'win32'
 	grp = opt.add_option_group('Common options')
 
 	grp.add_option('-4', '--32bits', action = 'store_true', dest = 'TARGET32', default = False,
@@ -297,10 +301,10 @@ def options(opt):
 	grp.add_option('-D', '--debug-engine', action = 'store_true', dest = 'DEBUG_ENGINE', default = False,
 		help = 'build with -DDEBUG [default: %default]')
 
-	grp.add_option('--use-sdl', action = 'store', dest = 'SDL', type = 'int', default = sys.platform != 'win32',
+	grp.add_option('--use-sdl', action = 'store', dest = 'SDL', type = 'int', default = not isWin32,
 		help = 'build engine with SDL [default: %default]')
 
-	grp.add_option('--use-togl', action = 'store', dest = 'GL', type = 'int', default = sys.platform != 'win32',
+	grp.add_option('--use-togl', action = 'store', dest = 'GL', type = 'int', default = False, #not isWin32,
 		help = 'build engine with ToGL [default: %default]')
 
 	grp.add_option('--build-games', action = 'store', dest = 'GAMES', type = 'string', default = 'hl2',
@@ -315,6 +319,9 @@ def options(opt):
 	grp.add_option('--togles', action = 'store_true', dest = 'TOGLES', default = False,
 		help = 'build engine with ToGLES [default: %default]')
 
+	grp.add_option('--dxvk', action = 'store', dest = 'DXVK', type = 'int', default = not isWin32,
+		help = 'build engine with DXVK [default: %default]')
+
 	# TODO(nillerusr): add wscript for opus building
 	grp.add_option('--enable-opus', action = 'store_true', dest = 'OPUS', default = False,
 		help = 'build engine with Opus voice codec [default: %default]')
@@ -325,7 +332,7 @@ def options(opt):
 	opt.load('compiler_optimizations subproject')
 
 	opt.load('xcompile compiler_cxx compiler_c sdl2 clang_compilation_database strip_on_install_v2 waf_unit_test subproject')
-	if sys.platform == 'win32':
+	if isWin32:
 		opt.load('msvc msdev msvs')
 	opt.load('reconfigure')
 
@@ -463,6 +470,13 @@ def configure(conf):
 		projects['game'] += ['togles']
 	elif conf.env.GL:
 		projects['game'] += ['togl']
+	elif conf.env.DXVK:
+		conf.load('glsl')
+		projects['game'] += ['thirdparty/dxvk']
+		conf.env.append_unique('INCLUDES', [
+			os.path.abspath('thirdparty/dxvk/include/native/windows/'),
+			os.path.abspath('thirdparty/dxvk/include/native/directx/'),
+		])
 
 	if conf.env.DEST_OS == 'win32':
 		projects['game'] += ['utils/bzip2']
@@ -502,7 +516,9 @@ def configure(conf):
 		flags += ['-fsanitize=%s'%conf.options.SANITIZE, '-fno-sanitize=vptr']
 
 	if conf.env.DEST_OS != 'win32':
-		flags += ['-pipe', '-fPIC', '-L'+os.path.abspath('.')+'/lib/'+conf.env.DEST_OS+'/'+conf.env.DEST_CPU+'/']
+		flags += ['-pipe', '-fPIC']
+	if conf.env.DEST_OS in ['android', 'win32']:
+		linkflags += ['-L'+os.path.abspath('.')+'/lib/'+conf.env.DEST_OS+'/'+conf.env.DEST_CPU+'/']
 	if conf.env.COMPILER_CC != 'msvc':
 		flags += ['-pthread']
 
@@ -648,5 +664,7 @@ def build(bld):
 			projects['game'] += ['togles']
 		elif bld.env.GL:
 			projects['game'] += ['togl']
+		elif bld.env.DXVK:
+			projects['game'] += ['thirdparty/dxvk']
 
 		bld.add_subproject(projects['game'])

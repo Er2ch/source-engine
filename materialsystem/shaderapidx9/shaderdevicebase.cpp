@@ -34,6 +34,28 @@ CShaderDeviceMgrBase *g_pShaderDeviceMgr;
 CShaderAPIBase *g_pShaderAPI;
 IShaderShadow *g_pShaderShadow;
 
+#ifdef USE_SDL
+#include "appframework/ilaunchermgr.h"
+ILauncherMgr *g_pLauncherMgr = NULL;	// set in CMaterialSystem::Connect
+
+void posixGetClientRect( void *hWnd, RECT *destRect )
+{
+	// the only useful answer this call can offer, is the size of the canvas.
+	// actually getting the window bounds is not useful.
+	// so, see if a D3D device is up and running, and if so,
+	// dig in and find out its backbuffer size and use that.
+
+	uint width, height;	
+	g_pLauncherMgr->RenderedSize( width, height, false );	// false = get them, don't set them
+	Assert( width!=0 && height!=0 );
+
+	destRect->left = 0;
+	destRect->top = 0;
+	destRect->right = width;
+	destRect->bottom = height;
+}
+#endif
+
 bool g_bUseShaderMutex = false;	// Shader mutex globals
 bool g_bShaderAccessDisallowed;
 CShaderMutex g_ShaderMutex;
@@ -148,6 +170,10 @@ bool CShaderDeviceMgrBase::Connect( CreateInterfaceFn factory )
 	ConnectTier2Libraries( &actualFactory, 1 );
 	g_pShaderUtil = (IShaderUtil*)ShaderDeviceFactory( SHADER_UTIL_INTERFACE_VERSION, NULL );
 	g_pShaderDeviceMgr = this;
+
+#ifdef USE_SDL
+	g_pLauncherMgr = (ILauncherMgr*)factory( SDLMGR_INTERFACE_VERSION, NULL );
+#endif
 
 	s_TempFactory = NULL;
 
@@ -962,7 +988,7 @@ bool CShaderDeviceBase::IsAAEnabled() const
 //-----------------------------------------------------------------------------
 #define MATERIAL_SYSTEM_WINDOW_ID		0xFEEDDEAD
 
-#ifdef USE_ACTUAL_DX
+#if defined(_WIN32) && defined(USE_ACTUAL_DX)
 static VD3DHWND GetTopmostParentWindow( VD3DHWND hWnd )
 {
 	// Find the parent window...
@@ -1005,19 +1031,11 @@ static BOOL CALLBACK EnumWindowsProcNotThis( VD3DHWND hWnd, LPARAM lParam )
 	EnumChildWindows( hWnd, EnumChildWindowsProc, lParam );
 	return TRUE;
 }
-#endif
 
 //-----------------------------------------------------------------------------
 // Adds a hook to let us know when other instances are setting the mode
 //-----------------------------------------------------------------------------
 
-#ifdef STRICT
-#define WINDOW_PROC WNDPROC
-#else
-#define WINDOW_PROC FARPROC
-#endif
-
-#ifdef USE_ACTUAL_DX
 static LRESULT CALLBACK ShaderDX8WndProc(VD3DHWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
 #if !defined( _X360 )
@@ -1065,7 +1083,7 @@ static LRESULT CALLBACK ShaderDX8WndProc(VD3DHWND hWnd, UINT msg, WPARAM wParam,
 void CShaderDeviceBase::InstallWindowHook( void* hWnd )
 {
 	Assert( m_hWndCookie == NULL );
-#ifdef USE_ACTUAL_DX
+#if defined(_WIN32) && defined(USE_ACTUAL_DX)
 #if !defined( _X360 )
 	VD3DHWND hParent = GetTopmostParentWindow( (VD3DHWND)hWnd );
 
@@ -1096,7 +1114,7 @@ void CShaderDeviceBase::InstallWindowHook( void* hWnd )
 
 void CShaderDeviceBase::RemoveWindowHook( void* hWnd )
 {
-#ifdef USE_ACTUAL_DX
+#if defined(_WIN32) && defined(USE_ACTUAL_DX)
 #if !defined( _X360 )
 	if ( m_hWndCookie )
 	{
@@ -1117,7 +1135,7 @@ void CShaderDeviceBase::RemoveWindowHook( void* hWnd )
 //-----------------------------------------------------------------------------
 void CShaderDeviceBase::SendIPCMessage( IPCMessage_t msg )
 {
-#ifdef USE_ACTUAL_DX
+#if defined(_WIN32) && defined(USE_ACTUAL_DX)
 #if !defined( _X360 )
 	// Gotta send this to all windows, since we don't know which ones
 	// are material system apps...
@@ -1240,7 +1258,7 @@ void CShaderDeviceBase::GetWindowSize( int& nWidth, int& nHeight ) const
 #ifdef _WIN32
 		GetClientRect( ( HWND )m_ViewHWnd, &rect );
 #else
-		toglGetClientRect( (VD3DHWND)m_ViewHWnd, &rect );
+		posixGetClientRect( (VD3DHWND)m_ViewHWnd, &rect );
 #endif
 		nWidth = rect.right - rect.left;
 		nHeight = rect.bottom - rect.top;

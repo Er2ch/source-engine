@@ -709,6 +709,7 @@ void CSDLMgr::Shutdown()
 {
 	SDLAPP_FUNC;
 
+#ifdef DX_TO_GL_ABSTRACTION
 	if (gGL && m_readFBO)
 #ifdef TOGLES
 		gGL->glDeleteFramebuffers(1, &m_readFBO);
@@ -716,6 +717,7 @@ void CSDLMgr::Shutdown()
 		gGL->glDeleteFramebuffersEXT(1, &m_readFBO);
 #endif
 	m_readFBO = 0;
+#endif
 
 	if ( m_Window )
 	{
@@ -819,6 +821,10 @@ bool CSDLMgr::CreateHiddenGameWindow( const char *pTitle, int width, int height 
 	int flags = SDL_WINDOW_HIDDEN;
 #if defined( DX_TO_GL_ABSTRACTION )
 	flags |= SDL_WINDOW_OPENGL;
+#elif defined(DXVK)
+	flags |= SDL_WINDOW_VULKAN;
+#else
+#error "Invalid SDL window backend"
 #endif
 	m_Window = SDL_CreateWindow( pTitle, x, y, width, height, flags );
 

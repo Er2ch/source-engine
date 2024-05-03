@@ -73,7 +73,7 @@ void CreateDumpDirectory( const char *szDirectoryName )
 
 void CPolyhedron_AllocByNew::Release( void )
 {
-	delete this;
+	delete [] (unsigned char*)this;
 }
 
 CPolyhedron_AllocByNew *CPolyhedron_AllocByNew::Allocate( unsigned short iVertices, unsigned short iLines, unsigned short iIndices, unsigned short iPolygons ) //creates the polyhedron along with enough memory to hold all it's data in a single allocation

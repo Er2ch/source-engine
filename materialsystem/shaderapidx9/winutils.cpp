@@ -9,13 +9,35 @@
 #ifndef _WIN32
 
 #include "appframework/ilaunchermgr.h"
+#if defined(OSX) || defined(PLATFORM_BSD)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 // LINUX path taken from //Steam/main/src/tier0/platform_posix.cpp - Returns installed RAM in MB. 
 static unsigned long GetInstalledRAM()
 {
 	unsigned long ulTotalRamMB = 2047;
 
-#ifdef LINUX
+#if defined(OSX) || defined(PLATFORM_BSD)
+	uint64_t memsize = 128 * 1024 * 1024;
+
+	int mib[2] = {
+		CTL_HW,
+#ifdef OSX
+		HW_MEMSIZE
+#else
+		HW_PHYSMEM
+#endif
+	};
+	u_int namelen = sizeof(mib) / sizeof(mib[0]);
+	size_t len = sizeof(memsize);
+
+	if (sysctl(mib, namelen, &memsize, &len, NULL, 0) < 0)
+		memsize = 128 * 1024 * 1024;
+
+	ulTotalRamMB = memsize / 1024 / 1024; // go from bytes to MB
+#elif defined(LINUX)
 	char rgchLine[256];
 	FILE *fpMemInfo = fopen( "/proc/meminfo", "r" );
 	if ( !fpMemInfo )
@@ -85,9 +107,11 @@ void SetThreadAffinityMask( void *hThread, int nMask )
 	DebuggerBreak();
 }
 
+#ifndef DXVK
 bool GUID::operator==( const struct _GUID &other ) const
 {
 	DebuggerBreak();
 	return memcmp( this, &other, sizeof( GUID ) ) == 0;
 }
+#endif
 #endif

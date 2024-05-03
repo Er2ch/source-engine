@@ -19,7 +19,9 @@
 #include <errno.h>
 #define WAIT_OBJECT_0 0
 #define WAIT_TIMEOUT 0x00000102
+#ifndef DXVK
 #define WAIT_FAILED -1
+#endif
 #define THREAD_PRIORITY_HIGHEST 2
 #endif
 

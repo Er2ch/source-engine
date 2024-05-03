@@ -6822,28 +6822,4 @@ HRESULT D3DXCompileShader(
 	return S_OK;
 }
 
-#if defined(DX_TO_GL_ABSTRACTION)
-void toglGetClientRect( void *hWnd, RECT *destRect )
-{
-	// the only useful answer this call can offer, is the size of the canvas.
-	// actually getting the window bounds is not useful.
-	// so, see if a D3D device is up and running, and if so,
-	// dig in and find out its backbuffer size and use that.
-
-	uint width, height;	
-	g_pLauncherMgr->RenderedSize( width, height, false );	// false = get them, don't set them
-	Assert( width!=0 && height!=0 );
-
-	destRect->left = 0;
-	destRect->top = 0;
-	destRect->right = width;
-	destRect->bottom = height;		
-	
-	//GLMPRINTF(( "-D- GetClientRect returning rect of (0,0, %d,%d)",width,height ));
-	
-	return;	
-}
-
-#endif
-
 #endif

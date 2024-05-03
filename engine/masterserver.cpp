@@ -685,7 +685,8 @@ void CMaster::Shutdown(void)
 void CMaster::RequestInternetServerList(const char *gamedir, IServerListResponse *response)
 {
 	if( m_bNoMasters ) return;
-	strncpy( m_szGameDir, gamedir, sizeof(m_szGameDir) );
+	if( gamedir != m_szGameDir)
+		strncpy( m_szGameDir, gamedir, sizeof(m_szGameDir) );
 
 	if( response )
 	{
